@@ -1,6 +1,0 @@
-streamlit
-opencv-python-headless
-numpy
-joblib
-pillow
-pillow-heif
