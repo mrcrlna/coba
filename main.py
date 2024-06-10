@@ -89,50 +89,30 @@ option = st.selectbox(
     ('Kamera', 'Unggah Gambar')
 )
 
-# Kontainer utama untuk tata letak yang rapi
 with st.container():
-    if option == 'Kamera':
-        if 'camera_opened' not in st.session_state:
-            st.session_state.camera_opened = False
-
-        if st.button('Buka Kamera', key='open_camera'):
-            st.session_state.camera_opened = True
-
-        if st.session_state.camera_opened:
-            camera_image = st.camera_input("Ambil Foto")
-            if camera_image is not None:
-                img = Image.open(camera_image)
+    uploaded_img = st.file_uploader("Unggah Gambar", type=["jpg", "jpeg", "png", "heic"])
+    if uploaded_img is not None:
+        if uploaded_img.name.lower().endswith('.heic'):
+            try:
+                heif_file = pillow_heif.read_heif(uploaded_img)
+                img = Image.frombytes(
+                    heif_file.mode,
+                    heif_file.size,
+                    heif_file.data,
+                    "raw",
+                    heif_file.mode,
+                    heif_file.stride,
+                )
                 img = np.array(img)
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)  # Konversi ke BGR untuk OpenCV
-                st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='Gambar dari Kamera', use_column_width=True)
-                prediction = predict_image(img, model, scaler)
-                class_info = get_class_info(prediction)
-                st.success(f"Prediksi Ikan: {class_info}")
-    
-    elif option == 'Unggah Gambar':
-        uploaded_img = st.file_uploader("Unggah Gambar", type=["jpg", "jpeg", "png", "heic"])
-        if uploaded_img is not None:
-            if uploaded_img.name.lower().endswith('.heic'):
-                try:
-                    heif_file = pillow_heif.read_heif(uploaded_img)
-                    img = Image.frombytes(
-                        heif_file.mode,
-                        heif_file.size,
-                        heif_file.data,
-                        "raw",
-                        heif_file.mode,
-                        heif_file.stride,
-                    )
-                    img = np.array(img)
-                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                except Exception as e:
-                    st.error(f"Error: {e}")
-                    img = None
-            else:
-                img = cv2.imdecode(np.frombuffer(uploaded_img.read(), np.uint8), 1)
-            
-            if img is not None:
-                st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='Gambar yang diunggah', use_column_width=True)
-                prediction = predict_image(img, model, scaler)
-                class_info = get_class_info(prediction)
-                st.success(f"Prediksi Ikan: {class_info}")
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            except Exception as e:
+                st.error(f"Error: {e}")
+                img = None
+        else:
+            img = cv2.imdecode(np.frombuffer(uploaded_img.read(), np.uint8), 1)
+        
+        if img is not None:
+            st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='Gambar yang diunggah', use_column_width=True)
+            prediction = predict_image(img, model, scaler)
+            class_info = get_class_info(prediction)
+            st.success(f"Prediksi Ikan: {class_info}")
